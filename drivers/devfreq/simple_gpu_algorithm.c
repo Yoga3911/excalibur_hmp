@@ -20,7 +20,7 @@
 #include <linux/msm_adreno_devfreq.h>
 #include <linux/io.h>
 
-static int default_laziness = 4;
+static int default_laziness = 2;
 module_param_named(simple_laziness, default_laziness, int, 0664);
 
 static int ramp_up_threshold = 5000;
