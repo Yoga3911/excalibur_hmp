@@ -577,7 +577,7 @@ static int smb2_usb_set_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_SDP_CURRENT_MAX:
 		rc = smblib_set_prop_sdp_current_max(chg, val);
 		break;
-	case POWER_SUPPLY_PROP_RERUN_APSD:
+	case POWER_SUPPLY_PROP_RERUN_AICL:
 		rc = smblib_set_prop_rerun_apsd(chg, val);
 		break;
 	default:
