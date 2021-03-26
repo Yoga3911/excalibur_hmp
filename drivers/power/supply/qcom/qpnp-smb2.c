@@ -391,7 +391,7 @@ static enum power_supply_property smb2_usb_props[] = {
 	POWER_SUPPLY_PROP_PD_VOLTAGE_MAX,
 	POWER_SUPPLY_PROP_PD_VOLTAGE_MIN,
 	POWER_SUPPLY_PROP_SDP_CURRENT_MAX,
-	POWER_SUPPLY_PROP_RERUN_APSD,
+	POWER_SUPPLY_PROP_RERUN_AICL,
 };
 
 extern bool is_poweroff_charge;
