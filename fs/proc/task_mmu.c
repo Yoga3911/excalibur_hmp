@@ -564,7 +564,7 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
 			return;
 		}
 
-		if (is_stack(vma)) {
+		if (is_stack(priv, vma)) {
 			seq_write(m, " [stack]\n", 9);
 			return;
 		}
