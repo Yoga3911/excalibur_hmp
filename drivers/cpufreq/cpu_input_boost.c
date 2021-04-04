@@ -12,6 +12,7 @@
 #include <linux/kthread.h>
 #include <uapi/linux/sched/types.h>
 #include <linux/moduleparam.h>
+#include <linux/sched/sysctl.h>
 
 static unsigned int input_boost_freq_lp __read_mostly =
 	CONFIG_INPUT_BOOST_FREQ_LP;
@@ -144,6 +145,8 @@ static void __cpu_input_boost_kick_max(struct boost_drv *b,
 void cpu_input_boost_kick_max(unsigned int duration_ms)
 {
 	struct boost_drv *b = &boost_drv_g;
+	
+	sysctl_sched_energy_aware = 0;
 
 	__cpu_input_boost_kick_max(b, duration_ms);
 }
@@ -155,6 +158,8 @@ static void input_unboost_worker(struct work_struct *work)
 
 	clear_bit(INPUT_BOOST, &b->state);
 	wake_up(&b->boost_waitq);
+	
+	sysctl_sched_energy_aware = 1;
 }
 
 static void max_unboost_worker(struct work_struct *work)
