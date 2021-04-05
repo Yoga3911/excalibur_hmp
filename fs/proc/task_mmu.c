@@ -133,7 +133,7 @@ static void seq_print_vma_name(struct seq_file *m, struct vm_area_struct *vma)
 	page_offset = (unsigned long)name - page_start_vaddr;
 	num_pages = DIV_ROUND_UP(page_offset + max_len, PAGE_SIZE);
 
-	seq_write(m, " [anon:", 7);
+	seq_write(m, "[anon:", 6);
 
 	for (i = 0; i < num_pages; i++) {
 		int len;
@@ -444,7 +444,7 @@ static int show_vma_header_prefix(struct seq_file *m, unsigned long start,
 	char *out;
 
 	/* Set the overflow status to get more memory if there's no space */
-	if (seq_get_buf(m, &out) < 64) {
+	if (seq_get_buf(m, &out) < 65) {
 		seq_commit(m, -1);
 		return -ENOMEM;
 	}
@@ -477,7 +477,11 @@ static int show_vma_header_prefix(struct seq_file *m, unsigned long start,
 
 	out[len++] = ' ';
 
-	m->count += num_to_str(&out[len], 20, ino) + len;
+	len += num_to_str(&out[len], 20, ino);
+
+	out[len++] = ' ';
+
+	m->count += len;
 	return 0;
 }
 
@@ -519,13 +523,12 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
 		 * This won't escape newline characters from the path. If a
 		 * program uses newlines in its paths then it can kick rocks.
 		 */
-		if (size > 2) {
-			const int inlen = size - 2;
+		if (size > 1) {
+			const int inlen = size - 1;
 			int outlen = inlen;
 			char *p;
 
-			*buf = ' ';
-			p = d_path_outlen(&file->f_path, buf + 1, &outlen);
+			p = d_path_outlen(&file->f_path, buf, &outlen);
 			if (!IS_ERR(p)) {
 				size_t len;
 
@@ -533,9 +536,9 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
 					len = inlen - outlen - 1;
 				else
 					len = strlen(p);
-				memmove(buf + 1, p, len);
-				buf[len + 1] = '\n';
-				seq_commit(m, len + 2);
+				memmove(buf, p, len);
+				buf[len] = '\n';
+				seq_commit(m, len + 1);
 				return;
 			}
 		}
@@ -554,18 +557,18 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
 	name = arch_vma_name(vma);
 	if (!name) {
 		if (!mm) {
-			seq_write(m, " [vdso]\n", 8);
+			seq_write(m, "[vdso]\n", 7);
 			return;
 		}
 
 		if (vma->vm_start <= mm->brk &&
 		    vma->vm_end >= mm->start_brk) {
-			seq_write(m, " [heap]\n", 8);
-			return;
+			seq_write(m, "[heap]\n", 7);
+			return;;
 		}
 
 		if (is_stack(priv, vma)) {
-			seq_write(m, " [stack]\n", 9);
+			seq_write(m, "[stack]\n", 8);
 			return;
 		}
 		if (vma_get_anon_name(vma)) {
@@ -575,10 +578,8 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
 	}
 
 done:
-	if (name) {
-		seq_putc(m, ' ');
+	if (name)
 		seq_puts(m, name);
-	}
 	seq_putc(m, '\n');
 }
 
@@ -923,7 +924,6 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 	} else if (last_vma) {
 		show_vma_header_prefix(
 			m, mss->first_vma_start, vma->vm_end, 0, 0, 0, 0);
-		seq_pad(m, ' ');
 		seq_puts(m, "[rollup]\n");
 	} else {
 		ret = SEQ_SKIP;
