@@ -4,9 +4,9 @@ export KERNELNAME=Excalibur
 
 export LOCALVERSION=
 
-export KBUILD_BUILD_USER=@ExcaliburZx
+export KBUILD_BUILD_USER=ExcaliburZx
 
-export KBUILD_BUILD_HOST=
+export KBUILD_BUILD_HOST=FunProject
 
 export TOOLCHAIN=clang
 
