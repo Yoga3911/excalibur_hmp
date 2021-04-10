@@ -2,7 +2,7 @@
 
 export KERNELNAME=Excalibur
 
-export LOCALVERSION=EAS
+export LOCALVERSION=
 
 export KBUILD_BUILD_USER=@ExcaliburZx
 
@@ -16,7 +16,7 @@ source helper
 
 gen_toolchain
 
-send_msg "⏳ Mulai memasak ${KERNELNAME} ${LOCALVERSION} for ${DEVICES}... ⏳"
+send_msg "⏳Mulai memasak ${KERNELNAME} kernel HMP ⏳"
 
 START=$(date +"%s")
 
