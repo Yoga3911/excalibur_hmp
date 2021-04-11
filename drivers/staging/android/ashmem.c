@@ -21,7 +21,7 @@
  * @prot_mask:		The allowed protection bits, as vm_flags
  *
  * The lifecycle of this structure is from our parent file's open() until
- * its release(). It is also protected by 'ashmem_mutex'
+ * its release().
  *
  * Warning: Mappings do NOT pin this structure; It dies on close()
  */
@@ -94,8 +94,6 @@ static ssize_t ashmem_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	struct file *vmfile;
 	ssize_t ret;
 
-	mutex_lock(&ashmem_mutex);
-
 	/* If size is not set, or set to 0, always return EOF. */
 	if (!READ_ONCE(asma->size))
 		return 0;
@@ -114,10 +112,6 @@ static ssize_t ashmem_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 	if (ret > 0)
 		vmfile->f_pos = iocb->ki_pos;
 	return ret;
-
-out_unlock:
-	mutex_unlock(&ashmem_mutex);
-	return ret;
 }
 
 static loff_t ashmem_llseek(struct file *file, loff_t offset, int origin)
@@ -128,14 +122,10 @@ static loff_t ashmem_llseek(struct file *file, loff_t offset, int origin)
 
 	if (!READ_ONCE(asma->size))
 		return -EINVAL;
-	}
 
 	vmfile = READ_ONCE(asma->file);
 	if (!vmfile)
 		return -EBADF;
-	}
-
-	mutex_unlock(&ashmem_mutex);
 
 	ret = vfs_llseek(vmfile, offset, origin);
 	if (ret < 0)
@@ -202,7 +192,6 @@ static int ashmem_file_setup(struct ashmem_area *asma, size_t size,
 
 static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
 {
-	static struct file_operations vmfile_fops;
 	struct ashmem_area *asma = file->private_data;
 	unsigned long prot_mask;
 	size_t size;
@@ -246,32 +235,21 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
 		vma->vm_file = asma->file;
 	}
 
-out:
-	mutex_unlock(&ashmem_mutex);
-	return ret;
+	return 0;
 }
 
 static int set_prot_mask(struct ashmem_area *asma, unsigned long prot)
 {
-	int ret = 0;
-
-	mutex_lock(&ashmem_mutex);
-
 	/* the user can only remove, not add, protection bits */
-	if (unlikely((asma->prot_mask & prot) != prot)) {
-		ret = -EINVAL;
-		goto out;
-	}
+	if (unlikely((READ_ONCE(asma->prot_mask) & prot) != prot))
+		return -EINVAL;
 
 	/* does the application expect PROT_READ to imply PROT_EXEC? */
 	if ((prot & PROT_READ) && (current->personality & READ_IMPLIES_EXEC))
 		prot |= PROT_EXEC;
 
-	asma->prot_mask = prot;
-
-out:
-	mutex_unlock(&ashmem_mutex);
-	return ret;
+	WRITE_ONCE(asma->prot_mask, prot);
+	return 0;
 }
 
 static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
