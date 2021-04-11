@@ -349,7 +349,7 @@ static int is_stack(struct proc_maps_private *priv,
 			__out[1] = hex_asc[(__val >> 28) & 0xf];	\
 			__out[0] = hex_asc[(__val >> 32) & 0xf];	\
 			break;						\
-		case 8:							\
+		default:						\
 			__out[7] = hex_asc[(__val >>  0) & 0xf];	\
 			__out[6] = hex_asc[(__val >>  4) & 0xf];	\
 			__out[5] = hex_asc[(__val >>  8) & 0xf];	\
@@ -358,81 +358,26 @@ static int is_stack(struct proc_maps_private *priv,
 			__out[2] = hex_asc[(__val >> 20) & 0xf];	\
 			__out[1] = hex_asc[(__val >> 24) & 0xf];	\
 			__out[0] = hex_asc[(__val >> 28) & 0xf];	\
-			break;						\
-		case 7:							\
-			__out[6] = hex_asc[(__val >>  0) & 0xf];	\
-			__out[5] = hex_asc[(__val >>  4) & 0xf];	\
-			__out[4] = hex_asc[(__val >>  8) & 0xf];	\
-			__out[3] = hex_asc[(__val >> 12) & 0xf];	\
-			__out[2] = hex_asc[(__val >> 16) & 0xf];	\
-			__out[1] = hex_asc[(__val >> 20) & 0xf];	\
-			__out[0] = hex_asc[(__val >> 24) & 0xf];	\
-			break;						\
-		case 6:							\
-			__out[5] = hex_asc[(__val >>  0) & 0xf];	\
-			__out[4] = hex_asc[(__val >>  4) & 0xf];	\
-			__out[3] = hex_asc[(__val >>  8) & 0xf];	\
-			__out[2] = hex_asc[(__val >> 12) & 0xf];	\
-			__out[1] = hex_asc[(__val >> 16) & 0xf];	\
-			__out[0] = hex_asc[(__val >> 20) & 0xf];	\
-			break;						\
-		case 5:							\
-			__out[4] = hex_asc[(__val >>  0) & 0xf];	\
-			__out[3] = hex_asc[(__val >>  4) & 0xf];	\
-			__out[2] = hex_asc[(__val >>  8) & 0xf];	\
-			__out[1] = hex_asc[(__val >> 12) & 0xf];	\
-			__out[0] = hex_asc[(__val >> 16) & 0xf];	\
-			break;						\
-		case 4:							\
-			__out[3] = hex_asc[(__val >>  0) & 0xf];	\
-			__out[2] = hex_asc[(__val >>  4) & 0xf];	\
-			__out[1] = hex_asc[(__val >>  8) & 0xf];	\
-			__out[0] = hex_asc[(__val >> 12) & 0xf];	\
-			break;						\
-		case 3:							\
-			__out[2] = hex_asc[(__val >>  0) & 0xf];	\
-			__out[1] = hex_asc[(__val >>  4) & 0xf];	\
-			__out[0] = hex_asc[(__val >>  8) & 0xf];	\
-			break;						\
-		case 2:							\
-			__out[1] = hex_asc[(__val >>  0) & 0xf];	\
-			__out[0] = hex_asc[(__val >>  4) & 0xf];	\
-			break;						\
-		case 1:							\
-			__out[0] = hex_asc[(__val >>  0) & 0xf];	\
+			__len = 8;					\
 			break;						\
 		}							\
 	} else {							\
-		__len = 1;						\
-		__out[0] = '0';						\
+		*(u64 *)__out = U64_C(0x3030303030303030);		\
+		__len = 8;						\
 	}								\
 									\
 	__len;								\
 })
 
-#define print_vma_hex2(out, val, clz_fn) \
+#define print_vma_hex2(out, val) \
 ({									\
 	const typeof(val) __val = val;					\
 	char *const __out = out;					\
-	size_t __len;							\
 									\
-	if (__val) {							\
-		__len = (sizeof(__val) * 8 - clz_fn(__val) + 3) / 4;	\
-		switch (__len) {					\
-		case 2:							\
-			__out[1] = hex_asc[(__val >>  0) & 0xf];	\
-			__out[0] = hex_asc[(__val >>  4) & 0xf];	\
-			break;						\
-		case 1:							\
-			__out[0] = hex_asc[(__val >>  0) & 0xf];	\
-			break;						\
-		}							\
-	} else {							\
-		__len = 1;						\
-		__out[0] = '0';						\
-	}								\
+	__out[1] = hex_asc[(__val >>  0) & 0xf];			\
+	__out[0] = hex_asc[(__val >>  4) & 0xf];			\
 									\
-	__len;								\
+	2;								\
 })
 
 static int show_vma_header_prefix(struct seq_file *m, unsigned long start,
@@ -469,11 +414,11 @@ static int show_vma_header_prefix(struct seq_file *m, unsigned long start,
 
 	out[len++] = ' ';
 
-	len += print_vma_hex2(out + len, MAJOR(dev), __builtin_clz);
+	len += print_vma_hex2(out + len, MAJOR(dev));
 
 	out[len++] = ':';
 
-	len += print_vma_hex2(out + len, MINOR(dev), __builtin_clz);
+	len += print_vma_hex2(out + len, MINOR(dev));
 
 	out[len++] = ' ';
 
