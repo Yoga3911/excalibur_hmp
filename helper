@@ -109,7 +109,7 @@ build(){
 
 	make_clean
 
-	if [ $2 == "-newcam" ]
+	if [ $2 == "-oldcam" ]
 	then
 		make_build "${1}-perf_defconfig"
 	else
