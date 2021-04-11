@@ -373,11 +373,12 @@ static int is_stack(struct proc_maps_private *priv,
 ({									\
 	const typeof(val) __val = val;					\
 	char *const __out = out;					\
+									\
 	__out[1] = hex_asc[(__val >>  0) & 0xf];			\
 	__out[0] = hex_asc[(__val >>  4) & 0xf];			\
 									\
 	2;								\
-
+})
 static int show_vma_header_prefix(struct seq_file *m, unsigned long start,
 				  unsigned long end, vm_flags_t flags,
 				  unsigned long long pgoff, dev_t dev,
