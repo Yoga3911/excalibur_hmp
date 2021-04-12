@@ -16,7 +16,8 @@ source helper
 
 gen_toolchain
 
-send_msg "⏳Mulai memasak ${KERNELNAME} kernel HMP ⏳"
+send_msg "⚔️ Mulai menempa ${KERNELNAME} kernel ⚔️"
+send_msg "📝 $(git log --pretty=format:'%s' -5) 📝"
 
 START=$(date +"%s")
 
@@ -24,7 +25,7 @@ for i in ${DEVICES//,/ }
 do 
 
 	build ${i} -oldcam
-
+	build ${i} -newcam
 
 done
 
