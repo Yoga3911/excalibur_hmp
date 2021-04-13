@@ -16,9 +16,7 @@ source helper
 
 gen_toolchain
 
-send_msg "⚔️ Mulai menempa ${KERNELNAME} kernel ⚔️
-
-📝 $(git log --pretty=format:'%s' -5) 📝"
+send_msg "⚔️ Mulai menempa ${KERNELNAME} kernel ⚔️"
 
 START=$(date +"%s")
 
