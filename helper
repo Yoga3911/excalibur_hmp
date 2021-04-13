@@ -41,24 +41,11 @@ send_msg(){
 send_file(){
 	print "Sending file..." green
 	SECONDS=$SECONDS
-	let "hours=SECONDS/3600"
-	let "minutes=(SECONDS%3600)/60"
-	let "seconds=(SECONDS%3600)%60"
-	if (( $SECONDS > 3600 )) ; then
+	if (( $SECONDS > 0 )) ; then
 	   curl -F chat_id="${chat_id}" \
-		-F caption="✅ Waktu: $hours jam $minutes menit $seconds detik ✅ Last commit: $(git log --pretty=format:'%s' -5)" \
+		-F caption="" \
 		-F document=@"${1}" \
 		 https://api.telegram.org/bot"${bot_token}"/sendDocument 
-	elif (( $SECONDS > 60 )) ; then
-	   curl -F chat_id="${chat_id}" \
-		-F caption="✅ Waktu: $minutes menit $seconds detik ✅ Last commit: $(git log --pretty=format:'%s' -5)" \
-		-F document=@"${1}" \
-		 https://api.telegram.org/bot"${bot_token}"/sendDocument
-	else
-	   curl -F chat_id="${chat_id}" \
-		-F caption="✅ Waktu: $seconds detik ✅ Last commit: $(git log --pretty=format:'%s' -5)" \
-		-F document=@"${1}" \
-		 https://api.telegram.org/bot"${bot_token}"/sendDocument
 	fi
 }
 
@@ -111,9 +98,9 @@ build(){
 
 	if [ $2 == "-oldcam" ]
 	then
-		make_build "${1}-perf_defconfig"
+		make_build "${1}-old_defconfig"
 	else
-		make_build "${1}-perf_defconfig"
+		make_build "${1}-new_defconfig"
 	fi
 		mkzip "$KERNELNAME-${1}${2}${3}-$DATE.zip"
 }
