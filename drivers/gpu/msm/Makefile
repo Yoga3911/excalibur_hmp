@@ -1,5 +1,4 @@
 ccflags-y := -Idrivers/staging/android
-ccflags-y += $(call cc-option,-funroll-loops,)
 
 msm_kgsl_core-y = \
 	kgsl.o \
