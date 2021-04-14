@@ -87,7 +87,7 @@ gen_toolchain(){
 		git clone --depth=1 https://github.com/chips-project/aarch64-elf gcc64
 		git clone --depth=1 https://github.com/chips-project/arm-eabi gcc32
 	fi
-	git clone --depth=1 https://github.com/Yoga3911/AnyKernel3 -b master anykernel
+	git clone --depth=1 https://github.com/Yoga3911/AnyKernel33 -b master anykernel
 }
 
 build(){
