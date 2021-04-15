@@ -682,7 +682,7 @@ static int refcount_overflow_handler(struct pt_regs *regs, unsigned int esr)
 	 * dummy 'cbz' instruction that follows the 'brk' instruction
 	 * that sent us here.
 	 */
-	rt = aarch64_insn_decode_register(AARCH64_INSN_REGTYPE_RT, dummy_cbz);
+	rt = aarch64_insn_decode_immediate(AARCH64_INSN_REGTYPE_RT, dummy_cbz);
 
 	/* First unconditionally saturate the refcount. */
 	*(int *)regs->regs[rt] = INT_MIN / 2;
