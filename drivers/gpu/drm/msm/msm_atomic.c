@@ -697,6 +697,10 @@ int msm_atomic_commit(struct drm_device *dev,
 		goto error;
 	}
 
+	if (!atomic_cmpxchg_acquire(&priv->pm_req_set, 1, 0))
+		pm_qos_update_request(&priv->pm_irq_req, 100);
+	mod_delayed_work(system_unbound_wq, &priv->pm_unreq_dwork, HZ / 10);
+
 	/*
 	 * This is the point of no return - everything below never fails except
 	 * when the hw goes bonghits. Which means we can commit the new state on
