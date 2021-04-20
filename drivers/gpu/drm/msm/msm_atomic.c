@@ -32,7 +32,11 @@ struct msm_commit {
 	struct msm_fence_cb fence_cb;
 	uint32_t crtc_mask;
 	uint32_t plane_mask;
-	struct kthread_work commit_work;
+	bool nonblock;
+	union {
+		struct kthread_work commit_work;
+		struct work_struct clean_work;
+	};
 };
 
 static BLOCKING_NOTIFIER_HEAD(msm_drm_notifier_list);
@@ -468,6 +472,16 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 	SDE_ATRACE_END("msm_enable");
 }
 
+static void complete_commit_cleanup(struct work_struct *work)
+{
+	struct msm_commit *c = container_of(work, typeof(*c), clean_work);
+	struct drm_atomic_state *state = c->state;
+
+	drm_atomic_state_put(state);
+
+	commit_destroy(c);
+}
+
 /* The (potentially) asynchronous part of the commit.  At this point
  * nothing can fail short of armageddon.
  */
@@ -499,15 +513,13 @@ static void complete_commit(struct msm_commit *commit)
 	 * not be critical path)
 	 */
 
-	msm_atomic_wait_for_commit_done(dev, state, 0);
+	msm_atomic_wait_for_commit_done(dev, state);
 
 	drm_atomic_helper_cleanup_planes(dev, state);
 
 	kms->funcs->complete_commit(kms, state);
 
-	drm_atomic_state_free(state);
-
-	commit_destroy(commit);
+	end_atomic(priv, c->crtc_mask, c->plane_mask);
 }
 
 static int msm_atomic_commit_dispatch(struct drm_device *dev,
@@ -542,9 +554,17 @@ static void _msm_drm_commit_work_cb(struct kthread_work *work)
 	 */
 	pm_qos_add_request(&req, PM_QOS_CPU_DMA_LATENCY, 100);
 	SDE_ATRACE_BEGIN("complete_commit");
-	complete_commit(commit);
+	complete_commit(c);
 	SDE_ATRACE_END("complete_commit");
 	pm_qos_remove_request(&req);
+
+	if (c->nonblock) {
+		/* Offload the cleanup onto little CPUs (an unbound wq) */
+		INIT_WORK(&c->clean_work, complete_commit_cleanup);
+		queue_work(system_unbound_wq, &c->clean_work);
+	} else {
+		complete_commit_cleanup(&c->clean_work);
+	}
 }
 
 static struct msm_commit *commit_init(struct drm_atomic_state *state)
@@ -585,6 +605,10 @@ static int msm_atomic_commit_dispatch(struct drm_device *dev,
 	struct drm_crtc *crtc = NULL;
 	struct drm_crtc_state *crtc_state = NULL;
 	int ret = -EINVAL, i = 0, j = 0;
+	bool nonblock;
+
+	/* cache since work will kfree commit in non-blocking case */
+	nonblock = commit->nonblock;
 
 	for_each_crtc_in_state(state, crtc, crtc_state, i) {
 		for (j = 0; j < priv->num_crtcs; j++) {
@@ -615,7 +639,23 @@ static int msm_atomic_commit_dispatch(struct drm_device *dev,
 			break;
 	}
 
-	return ret;
+	if (ret) {
+		/**
+		 * this is not expected to happen, but at this point the state
+		 * has been swapped, but we couldn't dispatch to a crtc thread.
+		 * fallback now to a synchronous complete_commit to try and
+		 * ensure that SW and HW state don't get out of sync.
+		 */
+		DRM_ERROR("failed to dispatch commit to any CRTC\n");
+		complete_commit(commit);
+		complete_commit_cleanup(&commit->clean_work);
+	} else if (!nonblock) {
+		kthread_flush_work(&commit->commit_work);
+	}
+	/* free nonblocking commits in this context, after processing */
+	if (!nonblock)
+		kfree(commit);
+}
 }
 
 /**
