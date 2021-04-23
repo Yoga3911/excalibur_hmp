@@ -274,7 +274,26 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
 				split_huge_page_pmd(vma, old_addr, old_pmd);
 			}
 			VM_BUG_ON(pmd_trans_huge(*old_pmd));
+		} else if (extent == PMD_SIZE) {
+#ifdef CONFIG_HAVE_MOVE_PMD
+			/*
+			 * If the extent is PMD-sized, try to speed the move by
+			 * moving at the PMD level if possible.
+			 */
+			int err = 0;
+
+			if (need_rmap_locks)
+				anon_vma_lock_write(vma->anon_vma);
+			err = move_normal_pmd(vma, new_vma, old_addr,
+					      new_addr, old_end,
+					      old_pmd, new_pmd);
+			if (need_rmap_locks)
+				anon_vma_unlock_write(vma->anon_vma);
+			if (err)
+				continue;
+#endif
 		}
+
 		if (pmd_none(*new_pmd) && __pte_alloc(new_vma->vm_mm, new_vma,
 						      new_pmd, new_addr))
 			break;
